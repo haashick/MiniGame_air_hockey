@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모바일 에어하키 (PvP 모드 추가)</title>
+    <title>모바일 에어하키 (PvP 움직임 개선)</title>
     <!-- Tailwind CSS CDN 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -56,8 +56,12 @@
 
 
         #gameContainer {
-            width: 100%;
-            max-width: 600px; 
+            /* 뷰포트에 맞게 크기를 조정하되, 데스크톱에서 너무 커지는 것을 방지 (1:1.5 비율 유지) */
+            /* min(화면 너비 95%, 화면 높이 90%를 1:1.5로 맞춘 너비, 최대 600px) */
+            width: min(95vw, calc(90vh / 1.5), 600px); 
+            height: auto; 
+            max-height: 90vh; 
+            
             aspect-ratio: 1 / 1.5; 
             display: flex;
             flex-direction: column;
@@ -68,6 +72,9 @@
         }
 
         canvas {
+            /* 캔버스가 컨테이너의 나머지 공간을 모두 채우도록 flex: 1 설정 */
+            flex: 1;
+            width: 100%;
             background-color: var(--board-color);
             border-radius: 1rem;
             touch-action: none; 
@@ -285,8 +292,14 @@
 
     // === 초기화 및 리사이즈 함수 ===
     function resizeCanvas() {
+        // 캔버스 크기 조정 (컨테이너 크기 사용)
         width = container.clientWidth;
-        height = container.clientHeight * 0.9; 
+        
+        // 스코어보드의 높이를 계산하여 캔버스 높이에서 제외
+        const scoreBoard = document.getElementById('scoreBoard');
+        const scoreBoardHeight = scoreBoard.offsetHeight; // 패딩 포함 실제 높이
+        
+        height = container.clientHeight - scoreBoardHeight;
 
         canvas.width = width;
         canvas.height = height;
@@ -531,8 +544,9 @@
             entity1.vx += nDx * (finalVp1 - vp1) * 1.5; 
             entity1.vy += nDy * (finalVp1 - vp1) * 1.5;
 
-            entity1.vx += entity2.vx * 0.5;
-            entity1.vy += entity2.vy * 0.5;
+            // PvP 개선: 패들의 움직임 속도를 퍽에 100% 전달하여 튕겨나가게 함 (1.0으로 수정)
+            entity1.vx += entity2.vx * 1.0; 
+            entity1.vy += entity2.vy * 1.0;
 
             limitSpeed(entity1);
         }
@@ -731,9 +745,9 @@
                 const mallet = activeTouches.get(identifier);
                 const pos = getPointerPosition(pointer, rect);
 
-                // 속도 계산
-                mallet.vx = (pos.x - mallet.lastX) * 0.5;
-                mallet.vy = (pos.y - mallet.lastY) * 0.5;
+                // 속도 계산: 퍽에 힘을 더 잘 전달하기 위해 계수 0.5를 1.5로 올림
+                mallet.vx = (pos.x - mallet.lastX) * 1.5;
+                mallet.vy = (pos.y - mallet.lastY) * 1.5;
 
                 // 위치 업데이트
                 mallet.x = pos.x;
