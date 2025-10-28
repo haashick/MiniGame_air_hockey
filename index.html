@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모바일 에어하키 (Player vs AI)</title>
+    <title>모바일 에어하키 (PvP 모드 추가)</title>
     <!-- Tailwind CSS CDN 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,8 +11,8 @@
         :root {
             --board-color: #0b1c31; /* 진한 남색 배경 */
             --line-color: #2a588b; /* 보드 라인 색상 */
-            --player-color: #4a90e2; /* 플레이어 패들 (파란색) */
-            --ai-color: #e24a4a; /* AI 패들 (빨간색) */
+            --player-color: #4a90e2; /* 플레이어 1/나 (파란색) */
+            --player2-color: #e24a4a; /* 플레이어 2/AI (빨간색) */
             --puck-color: #e6e6e6; /* 퍽 색상 */
             --max-velocity: 15;
             font-family: 'Inter', sans-serif;
@@ -25,51 +25,62 @@
             align-items: center;
             min-height: 100vh;
             background-color: #1a1a1a;
-            padding: 5px;
-            margin: 0;
-            overflow-x: hidden;
+            padding: 10px;
         }
 
         #gameControls {
             width: 100%;
-            max-width: 90vw;
+            max-width: 600px;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: wrap; 
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            margin-bottom: 8px;
+            padding: 10px 0;
+            margin-bottom: 10px;
             color: white;
-            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            font-size: 1rem;
         }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+        
+        @media (min-width: 640px) {
+            .control-group {
+                margin-bottom: 0;
+            }
+        }
+
 
         #gameContainer {
             width: 100%;
-            max-width: min(90vw, 90vh * 0.67); /* 화면 크기에 따라 동적 조절 */
-            aspect-ratio: 1 / 1.5; /* 에어하키 테이블 비율 유지 */
+            max-width: 600px; 
+            aspect-ratio: 1 / 1.5; 
             display: flex;
             flex-direction: column;
             align-items: center;
             border-radius: 1rem;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             background-color: var(--board-color);
-            margin: 0 auto;
         }
 
         canvas {
             background-color: var(--board-color);
             border-radius: 1rem;
-            touch-action: none; /* 모바일에서 기본 스크롤 동작 방지 */
+            touch-action: none; 
         }
 
         #scoreBoard {
-            padding: clamp(0.5rem, 2vw, 0.75rem);
+            padding: 0.75rem;
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: white;
-            font-size: clamp(1rem, 4vw, 1.5rem);
+            font-size: 1.5rem;
             font-weight: 700;
         }
 
@@ -79,8 +90,8 @@
             gap: 0.5rem;
         }
 
-        #aiScore { color: var(--ai-color); }
-        #playerScore { color: var(--player-color); }
+        #player2Score { color: var(--player2-color); } /* AI/P2 */
+        #player1Score { color: var(--player-color); } /* P1 */
 
         #messageBox {
             position: absolute;
@@ -100,15 +111,16 @@
         }
 
         .action-button {
-            margin-top: clamp(8px, 2vw, 15px);
-            padding: clamp(6px, 2vw, 10px) clamp(12px, 3vw, 20px);
+            margin-top: 15px;
+            padding: 8px 15px; /* 버튼 크기 조정 */
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            font-size: 0.9rem; /* 폰트 크기 조정 */
             font-weight: 600;
             transition: background-color 0.3s, transform 0.1s;
             box-shadow: 0 4px #00000030;
+            white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
         }
 
         .action-button:active {
@@ -117,7 +129,7 @@
         }
 
         #restartButton {
-            background-color: #4CAF50; /* Green */
+            background-color: #4CAF50; 
             color: white;
         }
 
@@ -125,56 +137,32 @@
             background-color: #45a049;
         }
         
-        /* 라운드 재시작 버튼의 커스텀 CSS는 Tailwind 클래스로 대체 */
-
-        /* 전체 재시작 버튼의 커스텀 CSS는 Tailwind 클래스로 대체 */
-
-        #difficultySelect {
-            padding: clamp(4px, 1vw, 5px) clamp(8px, 2vw, 10px);
+        #difficultySelect, #modeSelect {
+            padding: 5px 10px;
             border-radius: 5px;
             background-color: #333;
             color: white;
             border: 1px solid #555;
-            font-size: clamp(0.8rem, 2.5vw, 1rem);
-        }
-
-        /* 모바일 최적화 */
-        @media (max-width: 768px) {
-            body {
-                padding: 2px;
-            }
-            
-            #gameControls {
-                flex-direction: column;
-                gap: 8px;
-                align-items: center;
-            }
-            
-            #gameControls .flex {
-                justify-content: center;
-                gap: 8px;
-            }
-        }
-
-        /* 매우 작은 화면 대응 */
-        @media (max-width: 480px) {
-            #gameContainer {
-                max-width: 95vw;
-            }
-            
-            .action-button {
-                padding: 8px 12px;
-                font-size: 0.9rem;
-            }
+            font-size: 0.9rem;
         }
 
     </style>
 </head>
 <body>
 
-<!-- 난이도 선택 및 컨트롤 영역 -->
+<!-- 게임 모드, 난이도, 재시작 컨트롤 영역 -->
 <div id="gameControls">
-    <div class="flex items-center">
+    <!-- 모드 선택 -->
+    <div class="control-group">
+        <label for="modeSelect" class="text-white mr-2">모드:</label>
+        <select id="modeSelect" class="text-black">
+            <option value="ai">Player vs AI</option>
+            <option value="pvp">Player vs Player</option>
+        </select>
+    </div>
+
+    <!-- 난이도 선택 (AI 모드에서만 표시됨) -->
+    <div id="difficultyControl" class="control-group">
         <label for="difficultySelect" class="text-white mr-2">난이도:</label>
         <select id="difficultySelect" class="text-black">
             <option value="easy">쉬움</option>
@@ -183,8 +171,8 @@
         </select>
     </div>
     
-    <!-- 버튼들을 그룹화하고 오른쪽 정렬 및 줄 바꿈 처리 -->
-    <div class="flex space-x-2 mt-2 sm:mt-0">
+    <!-- 버튼 그룹 -->
+    <div class="flex space-x-2 flex-wrap sm:flex-nowrap justify-end ml-auto">
         <!-- 라운드 재시작 버튼 (점수 유지) -->
         <button id="resetRoundButton" class="action-button mt-0 bg-orange-500 hover:bg-orange-600">라운드 재시작</button>
         <!-- 전체 게임 재시작 버튼 (점수 리셋) -->
@@ -197,12 +185,12 @@
     <!-- 스코어 보드 -->
     <div id="scoreBoard">
         <div class="score-item">
-            <span id="aiLabel">AI (빨강)</span>
-            <span id="aiScore">0</span>
+            <span id="player2Label">AI (빨강)</span>
+            <span id="player2Score">0</span>
         </div>
         <div class="score-item">
-            <span id="playerScore">0</span>
-            <span id="playerLabel">(파랑) 나</span>
+            <span id="player1Score">0</span>
+            <span id="player1Label">(파랑) 나</span>
         </div>
     </div>
     
@@ -226,14 +214,19 @@
     const messageText = document.getElementById('messageText');
     const restartButton = document.getElementById('restartButton');
     const forceRestartButton = document.getElementById('forceRestartButton');
-    const resetRoundButton = document.getElementById('resetRoundButton'); // 라운드 재시작 버튼 참조 추가
-    const playerScoreElement = document.getElementById('playerScore');
-    const aiScoreElement = document.getElementById('aiScore');
-    const difficultySelect = document.getElementById('difficultySelect'); // 난이도 셀렉터 참조
+    const resetRoundButton = document.getElementById('resetRoundButton'); 
+    const player1ScoreElement = document.getElementById('player1Score');
+    const player2ScoreElement = document.getElementById('player2Score');
+    const player2Label = document.getElementById('player2Label'); // P2/AI 라벨
+    
+    const modeSelect = document.getElementById('modeSelect'); // 모드 셀렉터
+    const difficultySelect = document.getElementById('difficultySelect'); 
+    const difficultyControl = document.getElementById('difficultyControl'); // 난이도 컨트롤 div
 
     let gameLoopId;
     let isGameOver = false;
-    let width, height; // 캔버스 크기
+    let currentMode = 'ai'; // 'ai' 또는 'pvp'
+    let width, height; 
     let centerLineY;
 
     // 게임 요소 크기 (캔버스 크기에 비례하여 설정)
@@ -243,24 +236,27 @@
 
     let puck = {};
     let player1 = {}; // 아래쪽 (파란색)
-    let player2_ai = {}; // 위쪽 (빨간색)
-    let score = { player: 0, ai: 0, max: 7 };
+    let player2 = {}; // 위쪽 (빨간색 - AI 또는 P2)
+    let score = { player1: 0, player2: 0, max: 7 };
+
+    // 멀티터치를 위한 매핑 (터치 ID와 패들 매핑)
+    const activeTouches = new Map(); // Map<touchIdentifier, playerObject>
 
     // AI 난이도 설정
-    let AI_CONFIG = {}; // 현재 난이도 설정을 저장할 객체
+    let AI_CONFIG = {}; 
 
     const DIFFICULTY_SETTINGS = {
         easy: {
-            speed: 0.5, // 느린 반응 속도
-            defenseYRatio: 0.1 // 더 뒤로 물러서서 수비
+            speed: 0.5, 
+            defenseYRatio: 0.1 
         },
         normal: {
-            speed: 0.8, // 보통 반응 속도
-            defenseYRatio: 0.2 // 중간 수비 위치
+            speed: 0.8, 
+            defenseYRatio: 0.2 
         },
         hard: {
-            speed: 1.2, // 빠른 반응 속도
-            defenseYRatio: 0.3 // 더 앞으로 나와서 공격적 수비
+            speed: 1.2, 
+            defenseYRatio: 0.3 
         }
     };
     
@@ -268,41 +264,38 @@
     function applyDifficulty() {
         const difficulty = difficultySelect.value;
         AI_CONFIG = DIFFICULTY_SETTINGS[difficulty];
-        // 선택된 난이도 값이 유효하지 않은 경우 기본값 (normal) 적용
         if (!AI_CONFIG) {
             AI_CONFIG = DIFFICULTY_SETTINGS['normal'];
             difficultySelect.value = 'normal';
         }
     }
 
+    // === UI 업데이트 함수 (모드에 따라 라벨 변경) ===
+    function updateUIForMode() {
+        currentMode = modeSelect.value;
+        if (currentMode === 'ai') {
+            player2Label.textContent = 'AI (빨강)';
+            difficultyControl.style.display = 'flex';
+        } else { // pvp
+            player2Label.textContent = '플레이어 2 (빨강)';
+            difficultyControl.style.display = 'none'; // PvP 모드에서는 난이도 숨김
+        }
+    }
+
 
     // === 초기화 및 리사이즈 함수 ===
     function resizeCanvas() {
-        // 컨테이너 크기에 맞춰 캔버스 크기 조정
-        const containerRect = container.getBoundingClientRect();
-        width = containerRect.width;
-        height = containerRect.height * 0.9; // 스코어보드를 위한 공간 확보 (10%)
-
-        // 최소 크기 보장 (매우 작은 화면에서도 게임이 가능하도록)
-        const minSize = Math.min(window.innerWidth, window.innerHeight) * 0.3;
-        if (width < minSize) {
-            width = minSize;
-        }
-        if (height < minSize * 0.67) {
-            height = minSize * 0.67;
-        }
+        width = container.clientWidth;
+        height = container.clientHeight * 0.9; 
 
         canvas.width = width;
         canvas.height = height;
         centerLineY = height / 2;
 
-        // 요소 크기 및 위치 조정 (화면 크기에 따라 비례 조정)
-        const sizeMultiplier = Math.min(width / 300, height / 450); // 기준 크기 대비 비율
-        puck.r = Math.max(width * PUCK_RADIUS_RATIO, 8); // 최소 크기 보장
-        player1.r = Math.max(width * MALLET_RADIUS_RATIO, 12);
-        player2_ai.r = Math.max(width * MALLET_RADIUS_RATIO, 12);
+        puck.r = width * PUCK_RADIUS_RATIO;
+        player1.r = width * MALLET_RADIUS_RATIO;
+        player2.r = width * MALLET_RADIUS_RATIO;
 
-        // 초기 위치 설정 (항상 가운데)
         resetPuck();
         resetMallets();
     }
@@ -315,43 +308,49 @@
             r: puck.r || width * PUCK_RADIUS_RATIO,
             vx: 0,
             vy: 0,
-            friction: 0.99, // 마찰
-            maxSpeed: 15 * (width / 600) // 화면 크기에 따라 속도 보정
+            friction: 0.99, 
+            maxSpeed: 15 * (width / 600) 
         };
     }
 
     function resetMallets() {
-        // 플레이어 (아래쪽)
+        // 플레이어 1 (아래쪽)
         player1.x = width / 2;
         player1.y = height * 0.75;
         player1.r = player1.r || width * MALLET_RADIUS_RATIO;
         player1.vx = 0;
         player1.vy = 0;
         player1.isDragging = false;
+        player1.isUser = true; // 사용자 조작 가능
 
-        // AI (위쪽)
-        player2_ai.x = width / 2;
-        player2_ai.y = height * 0.25;
-        player2_ai.r = player2_ai.r || width * MALLET_RADIUS_RATIO;
-        player2_ai.vx = 0;
-        player2_ai.vy = 0;
+        // 플레이어 2 / AI (위쪽)
+        player2.x = width / 2;
+        player2.y = height * 0.25;
+        player2.r = player2.r || width * MALLET_RADIUS_RATIO;
+        player2.vx = 0;
+        player2.vy = 0;
+        player2.isDragging = false;
+        player2.isUser = (currentMode === 'pvp'); // PvP일 때만 사용자 조작 가능
     }
 
     // 전체 게임 재시작 (점수 리셋)
     function initializeGame() {
-        // 난이도 설정 적용
-        applyDifficulty();
+        updateUIForMode(); // 모드 및 UI 업데이트
+        
+        if (currentMode === 'ai') {
+            applyDifficulty();
+        }
 
-        // 캔버스 크기 및 요소 초기화
         resizeCanvas();
         resetPuck();
         resetMallets();
-        score.player = 0; // 점수 리셋
-        score.ai = 0;
+        score.player1 = 0; 
+        score.player2 = 0;
         isGameOver = false;
-        playerScoreElement.textContent = 0;
-        aiScoreElement.textContent = 0;
+        player1ScoreElement.textContent = 0;
+        player2ScoreElement.textContent = 0;
         messageBox.style.display = 'none';
+        activeTouches.clear(); // 터치 상태 초기화
 
         if (gameLoopId) {
             cancelAnimationFrame(gameLoopId);
@@ -361,39 +360,25 @@
     
     // 라운드 재시작 (점수 유지)
     function resetRound() {
-        // 캔버스 크기 및 요소 초기화
+        updateUIForMode(); // 모드 및 UI 업데이트 (점수 유지이므로 모드 변경은 없겠지만 안전하게)
+
         resizeCanvas();
         resetPuck();
         resetMallets();
         isGameOver = false;
         messageBox.style.display = 'none';
-        
-        // 점수는 유지되므로 업데이트 불필요
-        
+        activeTouches.clear();
+
         if (gameLoopId) {
             cancelAnimationFrame(gameLoopId);
         }
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
-    // 디바운스된 리사이즈 이벤트 처리 (성능 최적화)
-    let resizeTimeout;
     window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            resizeCanvas();
-            resetPuck(); // 요소 크기 변경 후 리셋
-            resetMallets();
-        }, 100); // 100ms 지연으로 과도한 리사이즈 이벤트 방지
-    });
-
-    // 화면 회전 감지 (모바일)
-    window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-            resizeCanvas();
-            resetPuck();
-            resetMallets();
-        }, 200); // 화면 회전 완료 후 실행
+        resizeCanvas();
+        resetPuck(); 
+        resetMallets();
     });
 
     // === 그리기 함수 ===
@@ -402,36 +387,34 @@
 
         // 중앙선
         ctx.beginPath();
-        // [FIX] CSS 변수 사용 시 getComputedStyle을 사용하도록 수정
         ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line-color');
         ctx.lineWidth = 4;
         ctx.setLineDash([10, 10]);
-        ctx.arc(width / 2, centerLineY, width * 0.2, 0, 2 * Math.PI); // 중앙 원
+        ctx.arc(width / 2, centerLineY, width * 0.2, 0, 2 * Math.PI); 
         ctx.moveTo(0, centerLineY);
         ctx.lineTo(width, centerLineY);
         ctx.stroke();
-        ctx.setLineDash([]); // 대시 제거
+        ctx.setLineDash([]); 
 
         // 골대 (위)
         let goalWidth = width * GOAL_WIDTH_RATIO;
+        let goalLeft = width / 2 - goalWidth / 2;
+        let goalRight = width / 2 + goalWidth / 2;
+        
         ctx.beginPath();
-        // [FIX] CSS 변수 사용 시 getComputedStyle을 사용하도록 수정
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board-color'); // 배경색과 동일
-        ctx.fillRect(width / 2 - goalWidth / 2, -1, goalWidth, 10);
-        // [FIX] CSS 변수 사용 시 getComputedStyle을 사용하도록 수정
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board-color'); 
+        ctx.fillRect(goalLeft, -1, goalWidth, 10);
         ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line-color');
         ctx.lineWidth = 4;
-        ctx.strokeRect(width / 2 - goalWidth / 2, 0, goalWidth, 10); // 골대 입구
+        ctx.strokeRect(goalLeft, 0, goalWidth, 10); 
 
         // 골대 (아래)
         ctx.beginPath();
-        // [FIX] CSS 변수 사용 시 getComputedStyle을 사용하도록 수정
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board-color');
-        ctx.fillRect(width / 2 - goalWidth / 2, height - 9, goalWidth, 10);
-        // [FIX] CSS 변수 사용 시 getComputedStyle을 사용하도록 수정
+        ctx.fillRect(goalLeft, height - 9, goalWidth, 10);
         ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line-color');
         ctx.lineWidth = 4;
-        ctx.strokeRect(width / 2 - goalWidth / 2, height - 10, goalWidth, 10); // 골대 입구
+        ctx.strokeRect(goalLeft, height - 10, goalWidth, 10); 
     }
 
     function drawCircle(x, y, r, color, glow = true) {
@@ -448,20 +431,17 @@
 
         ctx.fill();
         ctx.closePath();
-        ctx.shadowBlur = 0; // 그림자 리셋
+        ctx.shadowBlur = 0; 
     }
 
     function draw() {
-        // 캔버스 클리어
         ctx.clearRect(0, 0, width, height);
-
-        // 보드 그리기
         drawBoard();
 
-        // AI 패들 그리기 (빨강)
-        drawCircle(player2_ai.x, player2_ai.y, player2_ai.r, getComputedStyle(document.documentElement).getPropertyValue('--ai-color'));
+        // 플레이어 2 / AI 패들 그리기 (빨강)
+        drawCircle(player2.x, player2.y, player2.r, getComputedStyle(document.documentElement).getPropertyValue('--player2-color'));
 
-        // 플레이어 패들 그리기 (파랑)
+        // 플레이어 1 패들 그리기 (파랑)
         drawCircle(player1.x, player1.y, player1.r, getComputedStyle(document.documentElement).getPropertyValue('--player-color'));
 
         // 퍽 그리기 (흰색)
@@ -504,25 +484,25 @@
         let goalLeft = width / 2 - goalWidth / 2;
         let goalRight = width / 2 + goalWidth / 2;
 
-        // 위쪽 경계 (AI 골대)
+        // 위쪽 경계 (Player 2 / AI 골대)
         if (puck.y - puck.r < 0) {
             if (puck.x < goalLeft || puck.x > goalRight) {
                 puck.vy *= -1;
                 puck.y = puck.r;
             } else {
-                // 골인 (AI 골대에 들어감 -> 플레이어 득점)
-                scoreGoal('player'); 
+                // 골인 (P2 골대에 들어감 -> Player 1 득점)
+                scoreGoal('player1'); 
             }
         }
 
-        // 아래쪽 경계 (플레이어 골대)
+        // 아래쪽 경계 (Player 1 골대)
         if (puck.y + puck.r > height) {
             if (puck.x < goalLeft || puck.x > goalRight) {
                 puck.vy *= -1;
                 puck.y = height - puck.r;
             } else {
-                // 골인 (플레이어 골대에 들어감 -> AI 득점)
-                scoreGoal('ai'); 
+                // 골인 (P1 골대에 들어감 -> Player 2 득점)
+                scoreGoal('player2'); 
             }
         }
     }
@@ -534,26 +514,23 @@
         let minDistance = entity1.r + entity2.r;
 
         if (distance < minDistance) {
-            // 충돌 발생
             let angle = Math.atan2(dy, dx);
             let targetX = entity2.x + Math.cos(angle) * minDistance;
             let targetY = entity2.y + Math.sin(angle) * minDistance;
-            let ax = (targetX - entity1.x) * 0.1; // 겹침 보정
+            let ax = (targetX - entity1.x) * 0.1; 
             let ay = (targetY - entity1.y) * 0.1;
             entity1.x += ax;
             entity1.y += ay;
 
-            // 속도 반사 및 전달 (탄성 충돌)
             let nDx = dx / distance;
             let nDy = dy / distance;
             let vp1 = nDx * entity1.vx + nDy * entity1.vy;
             let vp2 = nDx * entity2.vx + nDy * entity2.vy;
 
-            let finalVp1 = ((vp1 * (1 - 1) + 2 * 1 * vp2) / (1 + 1)) * 0.95; // 1:1 질량 가정, 0.95는 에너지 손실
-            entity1.vx += nDx * (finalVp1 - vp1) * 1.5; // 패들 속도 전달을 위해 1.5배 증가
+            let finalVp1 = ((vp1 * (1 - 1) + 2 * 1 * vp2) / (1 + 1)) * 0.95; 
+            entity1.vx += nDx * (finalVp1 - vp1) * 1.5; 
             entity1.vy += nDy * (finalVp1 - vp1) * 1.5;
 
-            // 퍽에 패들의 속도 추가 (패들 속도가 퍽에 미치는 영향 증가)
             entity1.vx += entity2.vx * 0.5;
             entity1.vy += entity2.vy * 0.5;
 
@@ -561,99 +538,98 @@
         }
     }
 
-    function updatePlayerMallet() {
-        // 플레이어 패들 속도는 터치 이벤트에서 계산됨 (현재는 단순히 위치만 업데이트)
+    function updatePlayerMallet(player) {
+        let malletR = player.r;
+        let topLimit = (player === player1) ? centerLineY + malletR : malletR;
+        let bottomLimit = (player === player1) ? height - malletR : centerLineY - malletR;
 
-        // 패들을 플레이어 영역(하단 절반) 내로 제한
-        let malletR = player1.r;
-        player1.x = Math.max(malletR, Math.min(width - malletR, player1.x));
-        player1.y = Math.max(centerLineY + malletR, Math.min(height - malletR, player1.y));
+        // 패들을 각자의 영역 내로 제한
+        player.x = Math.max(malletR, Math.min(width - malletR, player.x));
+        player.y = Math.max(topLimit, Math.min(bottomLimit, player.y));
     }
 
     function updateAIMallet() {
-        // 1. 목표 위치 설정
+        if (currentMode === 'pvp') {
+            player2.vx = 0;
+            player2.vy = 0;
+            updatePlayerMallet(player2); // PvP 모드에서는 AI 대신 P2 조작 제한만 적용
+            return;
+        }
+
+        // AI 모드 로직 (이전과 동일)
         let targetX, targetY;
-        // AI_CONFIG.defenseYRatio 사용
         let aiDefenseY = height * AI_CONFIG.defenseYRatio; 
-        let malletR = player2_ai.r;
+        let malletR = player2.r;
 
         if (puck.y - puck.r > centerLineY) {
-            // 퍽이 플레이어 영역에 있을 때: 수비 모드 (골대 중앙 방어)
             targetX = width / 2;
             targetY = aiDefenseY;
         } else {
-            // 퍽이 AI 영역에 있을 때: 공격 모드 (퍽을 향해 이동)
             targetX = puck.x;
             targetY = puck.y;
-
-            // AI가 중앙선을 넘지 않도록 제한
             targetY = Math.max(malletR, Math.min(centerLineY - malletR, targetY));
         }
 
-        // 2. AI 움직임 계산
-        let dx = targetX - player2_ai.x;
-        let dy = targetY - player2_ai.y;
+        let dx = targetX - player2.x;
+        let dy = targetY - player2.y;
         let dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist > 1) {
-            // AI_CONFIG.speed 사용
             let speed = dist * 0.15 * AI_CONFIG.speed; 
             if (speed > puck.maxSpeed) {
                 speed = puck.maxSpeed;
             }
 
-            // 이전 속도를 저장하여 퍽에 전달될 수 있도록 함
-            player2_ai.vx = (dx / dist) * speed;
-            player2_ai.vy = (dy / dist) * speed;
+            player2.vx = (dx / dist) * speed;
+            player2.vy = (dy / dist) * speed;
 
-            player2_ai.x += player2_ai.vx;
-            player2_ai.y += player2_ai.vy;
+            player2.x += player2.vx;
+            player2.y += player2.vy;
         } else {
-            player2_ai.vx = 0;
-            player2_ai.vy = 0;
+            player2.vx = 0;
+            player2.vy = 0;
         }
 
-        // 3. AI 영역 제한
-        player2_ai.x = Math.max(malletR, Math.min(width - malletR, player2_ai.x));
-        player2_ai.y = Math.max(malletR, Math.min(centerLineY - malletR, player2_ai.y));
+        // AI 영역 제한
+        player2.x = Math.max(malletR, Math.min(width - malletR, player2.x));
+        player2.y = Math.max(malletR, Math.min(centerLineY - malletR, player2.y));
     }
 
 
     function update() {
         if (isGameOver) return;
 
-        // AI 패들 업데이트
-        updateAIMallet();
+        // 패들 업데이트
+        updatePlayerMallet(player1);
+        updateAIMallet(); // AI 로직 또는 PvP 모드 제한 적용
         
-        // 플레이어 패들 업데이트 (터치 이벤트에 의해 위치는 이미 업데이트됨, 충돌 제한만)
-        updatePlayerMallet();
-
-        // 충돌 체크 (Puck vs Player)
+        // 충돌 체크
         checkCollision(puck, player1);
-        checkCollision(puck, player2_ai);
+        checkCollision(puck, player2);
 
-        // 퍽 업데이트 (움직임 및 벽 충돌, 골인)
+        // 퍽 업데이트
         updatePuck();
     }
 
     // === 스코어 및 게임 종료 처리 함수 ===
     function scoreGoal(scorer) {
-        if (scorer === 'ai') {
-            score.ai++;
-            aiScoreElement.textContent = score.ai;
-            showMessage('AI 득점! (빨강)');
-        } else { // scorer === 'player'
-            score.player++;
-            playerScoreElement.textContent = score.player;
-            showMessage('나 득점! (파랑)');
+        let scorerName = '';
+        if (scorer === 'player2') {
+            score.player2++;
+            player2ScoreElement.textContent = score.player2;
+            scorerName = player2Label.textContent;
+        } else { // scorer === 'player1'
+            score.player1++;
+            player1ScoreElement.textContent = score.player1;
+            scorerName = document.getElementById('player1Label').textContent.replace(/[()]/g, '');
         }
 
-        // 퍽과 패들 리셋
+        showMessage(`${scorerName} 득점!`);
+
         resetPuck();
         resetMallets();
 
-        // 승리 조건 확인
-        if (score.player >= score.max || score.ai >= score.max) {
+        if (score.player1 >= score.max || score.player2 >= score.max) {
             endGame();
         }
     }
@@ -661,8 +637,13 @@
     function endGame() {
         isGameOver = true;
         cancelAnimationFrame(gameLoopId);
-        let winner = score.player >= score.max ? '나 (파랑)' : 'AI (빨강)';
-        messageText.innerHTML = `승리자는 ${winner} 입니다!`;
+        let winnerName = '';
+        if (score.player1 >= score.max) {
+            winnerName = document.getElementById('player1Label').textContent.replace(/[()]/g, '');
+        } else {
+            winnerName = player2Label.textContent;
+        }
+        messageText.innerHTML = `승리자는 ${winnerName} 입니다!`;
         messageBox.style.display = 'block';
     }
 
@@ -670,7 +651,6 @@
         messageText.textContent = msg;
         messageBox.style.display = 'block';
         
-        // 1초 후 메시지 숨기기 (게임 오버 시 제외)
         if (!isGameOver) {
             setTimeout(() => {
                 if (!isGameOver) {
@@ -689,61 +669,97 @@
         }
     }
 
-    // === 터치 이벤트 처리 ===
-    let lastTouchX = player1.x;
-    let lastTouchY = player1.y;
+    // === 터치 이벤트 처리 (멀티터치 지원) ===
+    function getPointerPosition(pointer, rect) {
+        return {
+            x: pointer.clientX - rect.left,
+            y: pointer.clientY - rect.top
+        };
+    }
 
+    // 터치/마우스 시작
     function handleTouchStart(e) {
         e.preventDefault();
         if (isGameOver) return;
 
-        let rect = canvas.getBoundingClientRect();
-        // [FIX] e.touches가 정의되지 않았을 경우 (마우스 이벤트), e 자체를 사용하도록 수정
-        const pointer = e.touches ? e.touches[0] : e;
-        
-        // 캔버스 좌표로 변환 (화면 크기 변화에 대응)
-        let touchX = (pointer.clientX - rect.left) * (width / rect.width);
-        let touchY = (pointer.clientY - rect.top) * (height / rect.height);
+        const rect = canvas.getBoundingClientRect();
+        const pointers = e.touches ? Array.from(e.touches) : [e]; // 터치 배열 또는 단일 마우스 이벤트
 
-        // 플레이어 패들 영역에 터치/클릭했는지 확인 (터치 영역을 더 크게)
-        let dx = touchX - player1.x;
-        let dy = touchY - player1.y;
-        let touchRadius = Math.max(player1.r * 2, 30); // 최소 터치 영역 보장
-        if (Math.sqrt(dx * dx + dy * dy) < touchRadius) {
-            player1.isDragging = true;
-            lastTouchX = touchX;
-            lastTouchY = touchY;
+        for (const pointer of pointers) {
+            const pos = getPointerPosition(pointer, rect);
+            const identifier = e.touches ? pointer.identifier : 'mouse'; // 터치 ID 또는 'mouse'
+
+            // P1 영역 (아래 절반) 확인
+            const dx1 = pos.x - player1.x;
+            const dy1 = pos.y - player1.y;
+            const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+            
+            // P2 영역 (위쪽 절반) 확인
+            const dx2 = pos.x - player2.x;
+            const dy2 = pos.y - player2.y;
+            const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+            let malletToDrag = null;
+
+            if (dist1 < player1.r * 1.5 && player1.isUser && pos.y > centerLineY) {
+                malletToDrag = player1;
+            } else if (dist2 < player2.r * 1.5 && player2.isUser && pos.y <= centerLineY) {
+                malletToDrag = player2;
+            }
+
+            if (malletToDrag && !activeTouches.has(identifier)) {
+                malletToDrag.isDragging = true;
+                malletToDrag.lastX = pos.x;
+                malletToDrag.lastY = pos.y;
+                activeTouches.set(identifier, malletToDrag);
+            }
         }
     }
 
+    // 터치/마우스 이동
     function handleTouchMove(e) {
         e.preventDefault();
-        if (!player1.isDragging || isGameOver) return;
-
-        let rect = canvas.getBoundingClientRect();
-        // [FIX] e.touches가 정의되지 않았을 경우 (마우스 이벤트), e 자체를 사용하도록 수정
-        const pointer = e.touches ? e.touches[0] : e;
+        if (isGameOver) return;
         
-        // 캔버스 좌표로 변환 (화면 크기 변화에 대응)
-        let touchX = (pointer.clientX - rect.left) * (width / rect.width);
-        let touchY = (pointer.clientY - rect.top) * (height / rect.height);
+        const rect = canvas.getBoundingClientRect();
+        const pointers = e.touches ? Array.from(e.touches) : [e];
 
-        // 패들 속도 계산 (터치 이동량 기반, 화면 크기에 따라 조정)
-        const speedMultiplier = Math.min(width / 300, 1); // 작은 화면에서 속도 조정
-        player1.vx = (touchX - lastTouchX) * 0.5 * speedMultiplier;
-        player1.vy = (touchY - lastTouchY) * 0.5 * speedMultiplier;
+        for (const pointer of pointers) {
+            const identifier = e.touches ? pointer.identifier : 'mouse';
 
-        // 패들 위치 업데이트
-        player1.x = touchX;
-        player1.y = touchY;
+            if (activeTouches.has(identifier)) {
+                const mallet = activeTouches.get(identifier);
+                const pos = getPointerPosition(pointer, rect);
 
-        lastTouchX = touchX;
-        lastTouchY = touchY;
+                // 속도 계산
+                mallet.vx = (pos.x - mallet.lastX) * 0.5;
+                mallet.vy = (pos.y - mallet.lastY) * 0.5;
+
+                // 위치 업데이트
+                mallet.x = pos.x;
+                mallet.y = pos.y;
+
+                mallet.lastX = pos.x;
+                mallet.lastY = pos.y;
+            }
+        }
     }
 
+    // 터치/마우스 종료
     function handleTouchEnd(e) {
         e.preventDefault();
-        player1.isDragging = false;
+        
+        const changedTouches = e.changedTouches ? Array.from(e.changedTouches) : [e];
+
+        for (const pointer of changedTouches) {
+            const identifier = e.changedTouches ? pointer.identifier : 'mouse';
+
+            if (activeTouches.has(identifier)) {
+                const mallet = activeTouches.get(identifier);
+                mallet.isDragging = false;
+                activeTouches.delete(identifier);
+            }
+        }
     }
 
     // === 이벤트 리스너 등록 ===
@@ -754,15 +770,16 @@
     // 마우스 이벤트도 지원 (데스크톱 테스트용)
     canvas.addEventListener('mousedown', handleTouchStart, false);
     canvas.addEventListener('mousemove', (e) => {
-        // 마우스 왼쪽 버튼(buttons === 1)이 눌려있을 때만 이동 처리
-        if (e.buttons === 1) { handleTouchMove(e); }
+        if (e.buttons === 1) { handleTouchMove(e); } // 마우스 왼쪽 버튼 클릭 시
     }, false);
     canvas.addEventListener('mouseup', handleTouchEnd, false);
 
     restartButton.addEventListener('click', initializeGame);
-    forceRestartButton.addEventListener('click', initializeGame); // 전체 게임 재시작 이벤트
-    resetRoundButton.addEventListener('click', resetRound); // 라운드 재시작 이벤트 추가
-    // 난이도 변경 시 게임 재시작
+    forceRestartButton.addEventListener('click', initializeGame); 
+    resetRoundButton.addEventListener('click', resetRound); 
+    
+    // 모드/난이도 변경 시 게임 재시작
+    modeSelect.addEventListener('change', initializeGame); 
     difficultySelect.addEventListener('change', initializeGame); 
 
 
