@@ -531,7 +531,7 @@
             let angle = Math.atan2(dy, dx);
             let targetX = entity2.x + Math.cos(angle) * minDistance;
             let targetY = entity2.y + Math.sin(angle) * minDistance;
-            let separationForce = 0.15; // 분리 힘 증가
+            let separationForce = 0.2; // 분리 힘을 더 강하게
             entity1.x += (targetX - entity1.x) * separationForce;
             entity1.y += (targetY - entity1.y) * separationForce;
 
@@ -548,19 +548,25 @@
             if (relativeSpeed > 0) return;
 
             // 탄성 충돌 계산 (질량 고려)
-            let restitution = 0.8; // 탄성 계수
+            let restitution = 0.9; // 탄성 계수 증가
             let impulse = -(1 + restitution) * relativeSpeed;
             
             // PvP 모드에서는 더 강한 충돌 반응
-            let collisionMultiplier = (currentMode === 'pvp') ? 1.2 : 1.0;
+            let collisionMultiplier = (currentMode === 'pvp') ? 1.3 : 1.0;
             impulse *= collisionMultiplier;
 
             // 속도 업데이트
             entity1.vx += impulse * nDx;
             entity1.vy += impulse * nDy;
 
-            // 패들의 움직임을 퍽에 전달 (PvP 모드에서 더 강하게)
-            let velocityTransfer = (currentMode === 'pvp') ? 0.8 : 0.6;
+            // 드리블 방지: 패들이 드래그 중일 때는 속도 전달을 제한
+            let velocityTransfer = 0.4; // 기본 속도 전달 감소
+            if (entity2.isDragging) {
+                velocityTransfer = 0.2; // 드래그 중일 때 더 적게 전달
+            } else if (currentMode === 'pvp') {
+                velocityTransfer = 0.6; // 일반적인 PvP 상황에서는 더 많이 전달
+            }
+            
             entity1.vx += entity2.vx * velocityTransfer;
             entity1.vy += entity2.vy * velocityTransfer;
 
@@ -577,14 +583,14 @@
         player.x = Math.max(malletR, Math.min(width - malletR, player.x));
         player.y = Math.max(topLimit, Math.min(bottomLimit, player.y));
         
-        // PvP 모드에서 패들의 속도를 점진적으로 감소시켜 더 자연스러운 움직임 구현
-        if (currentMode === 'pvp' && !player.isDragging) {
-            player.vx *= 0.85; // 속도 감소율 증가
-            player.vy *= 0.85;
+        // 드래그 중이 아닐 때 패들의 속도를 더 빠르게 감소시켜 드리블 방지
+        if (!player.isDragging) {
+            player.vx *= 0.7; // 속도 감소율을 더 강하게
+            player.vy *= 0.7;
             
             // 매우 작은 속도는 0으로 설정
-            if (Math.abs(player.vx) < 0.1) player.vx = 0;
-            if (Math.abs(player.vy) < 0.1) player.vy = 0;
+            if (Math.abs(player.vx) < 0.2) player.vx = 0;
+            if (Math.abs(player.vy) < 0.2) player.vy = 0;
         }
     }
 
@@ -790,12 +796,14 @@
                 const mallet = activeTouches.get(identifier);
                 const pos = getPointerPosition(pointer, rect);
 
-                // 더 자연스러운 속도 계산을 위해 스무딩 적용
+                // 움직임 거리 계산
                 const deltaX = pos.x - mallet.lastX;
                 const deltaY = pos.y - mallet.lastY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 
-                // PvP 모드에서 더 반응적인 움직임을 위해 속도 계수 조정
-                const velocityMultiplier = (currentMode === 'pvp') ? 2.0 : 1.5;
+                // 드리블 방지를 위해 속도 제한
+                const maxTouchSpeed = 8; // 터치 이동 시 최대 속도 제한
+                const velocityMultiplier = Math.min(maxTouchSpeed / Math.max(distance, 0.1), 1.5);
                 
                 mallet.vx = deltaX * velocityMultiplier;
                 mallet.vy = deltaY * velocityMultiplier;
@@ -823,19 +831,10 @@
                 const mallet = activeTouches.get(identifier);
                 mallet.isDragging = false;
                 
-                // PvP 모드에서 터치 종료 시 관성 유지
-                if (currentMode === 'pvp') {
-                    // 마지막 움직임의 방향으로 약간의 관성 부여
-                    const deltaX = mallet.lastX - (mallet.startX || mallet.lastX);
-                    const deltaY = mallet.lastY - (mallet.startY || mallet.lastY);
-                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    
-                    if (distance > 5) { // 최소 움직임 거리 확인
-                        const inertiaMultiplier = 0.3; // 관성 계수
-                        mallet.vx += deltaX * inertiaMultiplier;
-                        mallet.vy += deltaY * inertiaMultiplier;
-                    }
-                }
+                // 드리블 방지를 위해 터치 종료 시 관성 제거
+                // 대신 패들의 현재 속도를 유지하되 빠르게 감소시킴
+                mallet.vx *= 0.5; // 터치 종료 시 속도를 절반으로 감소
+                mallet.vy *= 0.5;
                 
                 activeTouches.delete(identifier);
             }
