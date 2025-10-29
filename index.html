@@ -527,6 +527,26 @@
         let minDistance = entity1.r + entity2.r;
 
         if (distance < minDistance) {
+            // 드래그 중인 패들과의 충돌은 말렛을 움직이지 않고 퍽만 밀어냄 (드리블 방지)
+            if (entity2.isDragging) {
+                // 충돌 방향 (정규화)
+                let nx = dx / (distance || 1);
+                let ny = dy / (distance || 1);
+                let overlap = (minDistance - distance) + 0.5; // 약간의 여유로 더 분리
+
+                // 퍽을 말렛 바깥으로 즉시 이동
+                entity1.x = entity2.x + nx * (entity2.r + entity1.r + 0.5);
+                entity1.y = entity2.y + ny * (entity2.r + entity1.r + 0.5);
+
+                // 말렛 이동 속도를 퍽에 강하게 전달하여 즉시 튕겨나가도록 함
+                let hitPower = 0.9; // 전달 비율
+                entity1.vx += entity2.vx * hitPower + nx * 6; // 정규 방향으로 추가 임펄스
+                entity1.vy += entity2.vy * hitPower + ny * 6;
+
+                limitSpeed(entity1);
+                return;
+            }
+
             // 겹침 해결 - 강제로 분리
             let overlap = minDistance - distance;
             let separationX = (dx / distance) * overlap * 0.5;
@@ -786,6 +806,13 @@
                 mallet.x = pos.x;
                 mallet.y = pos.y;
 
+                // 말렛을 각자의 영역 내로 즉시 클램프 (드리블/겹침 완화)
+                const malletR = mallet.r;
+                const topLimit = (mallet === player1) ? centerLineY + malletR : malletR;
+                const bottomLimit = (mallet === player1) ? height - malletR : centerLineY - malletR;
+                mallet.x = Math.max(malletR, Math.min(width - malletR, mallet.x));
+                mallet.y = Math.max(topLimit, Math.min(bottomLimit, mallet.y));
+
                 // 속도 계산 (프레임 간격 고려)
                 const deltaX = pos.x - mallet.lastX;
                 const deltaY = pos.y - mallet.lastY;
@@ -800,6 +827,24 @@
                 } else {
                     mallet.vx = deltaX;
                     mallet.vy = deltaY;
+                }
+
+                // 드래그 중 겹침 시 퍽을 말렛 외곽으로 즉시 밀어내고 임펄스 부여
+                let targetPuck = puck;
+                let dx = targetPuck.x - mallet.x;
+                let dy = targetPuck.y - mallet.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+                let minDist = targetPuck.r + mallet.r;
+                if (dist < minDist) {
+                    let nx = dx / dist;
+                    let ny = dy / dist;
+                    targetPuck.x = mallet.x + nx * (minDist + 0.5);
+                    targetPuck.y = mallet.y + ny * (minDist + 0.5);
+                    // 말렛 이동 기반 임펄스
+                    const hitPower = 0.9;
+                    targetPuck.vx += mallet.vx * hitPower + nx * 6;
+                    targetPuck.vy += mallet.vy * hitPower + ny * 6;
+                    limitSpeed(targetPuck);
                 }
 
                 mallet.lastX = pos.x;
